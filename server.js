@@ -21,16 +21,13 @@ mongoose
     console.error("❌ MongoDB connection failed:", err.message);
     process.exit(1);
   });
-
 mongoose.connection.on("disconnected", () => {
   console.warn("⚠️  MongoDB disconnected");
 });
-
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/books", require("./routes/books"));
 app.use("/api/members", require("./routes/members"));
 app.use("/api/transactions", require("./routes/transactions"));
-
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
@@ -39,11 +36,9 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
-
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
@@ -51,7 +46,6 @@ app.use((err, req, res, next) => {
     message: err.message || "Internal Server Error",
   });
 });
-
 app.listen(PORT, () => {
   console.log(`
   🏛️  Library Management System
@@ -59,7 +53,7 @@ app.listen(PORT, () => {
   🚀 Server running on    : http://localhost:${PORT}
   📚 API base URL         : http://localhost:${PORT}/api
   🗄️  MongoDB URI          : ${MONGODB_URI}
-  
+
   📖 API Endpoints:
      GET    /api/health
      GET    /api/books
@@ -75,5 +69,4 @@ app.listen(PORT, () => {
      PUT    /api/transactions/return/:id
   `);
 });
-
 module.exports = app;
