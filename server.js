@@ -14,7 +14,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
-
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, "public")));
 
