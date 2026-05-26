@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const bookSchema = new mongoose.Schema(
   {
     title: {
@@ -86,13 +85,10 @@ const bookSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-// Update status based on available copies
 bookSchema.pre("save", function (next) {
   this.status = this.availableCopies > 0 ? "Available" : "Out of Stock";
   next();
 });
-
 bookSchema.pre("findOneAndUpdate", function (next) {
   const update = this.getUpdate();
   if (update.availableCopies !== undefined) {
@@ -100,5 +96,4 @@ bookSchema.pre("findOneAndUpdate", function (next) {
   }
   next();
 });
-
 module.exports = mongoose.model("Book", bookSchema);
