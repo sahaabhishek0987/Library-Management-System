@@ -142,7 +142,7 @@ This creates:
 
 | Role   | Username  | Password    |
 |--------|-----------|-------------|
-| Admin  | `admin`   | `admin123`  |
+| Admin  | `admin`   | `admin_password`  |
 | Issuer | `issuer1` | `issuer123` |
 
 It also inserts **10 sample books** across categories (Fiction, Science, Technology, History, etc.) and **5 sample members**.
@@ -173,7 +173,7 @@ All endpoints are prefixed with `/api`. All routes except `POST /api/auth/login`
 POST /api/auth/login
 {
   "username": "admin",
-  "password": "admin123"
+  "password": "admin_password"
 }
 ```
 
