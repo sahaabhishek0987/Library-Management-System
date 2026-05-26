@@ -3,11 +3,7 @@ const router = express.Router();
 const Member = require("../models/Member");
 const Transaction = require("../models/Transaction");
 const { protect, requirePermission } = require("../middleware/auth");
-
-// All member routes require authentication
 router.use(protect);
-
-// ─── GET /api/members ─── List all members
 router.get("/", async (req, res) => {
   try {
     const {
@@ -19,7 +15,6 @@ router.get("/", async (req, res) => {
       sortBy = "createdAt",
       order = "desc",
     } = req.query;
-
     const query = {};
     if (search) {
       query.$or = [
@@ -30,10 +25,8 @@ router.get("/", async (req, res) => {
     }
     if (status) query.status = status;
     if (membershipType) query.membershipType = membershipType;
-
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sortOrder = order === "asc" ? 1 : -1;
-
     const [members, total] = await Promise.all([
       Member.find(query)
         .sort({ [sortBy]: sortOrder })
@@ -41,7 +34,6 @@ router.get("/", async (req, res) => {
         .limit(parseInt(limit)),
       Member.countDocuments(query),
     ]);
-
     res.json({
       success: true,
       data: members,
@@ -51,8 +43,6 @@ router.get("/", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── GET /api/members/stats ─── Member statistics
 router.get("/stats", async (req, res) => {
   try {
     const [total, active, withFines] = await Promise.all([
@@ -65,8 +55,6 @@ router.get("/stats", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── GET /api/members/:id ─── Get single member
 router.get("/:id", async (req, res) => {
   try {
     const member = await Member.findById(req.params.id);
@@ -77,8 +65,6 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── GET /api/members/:id/transactions ─── Member borrow history
 router.get("/:id/transactions", async (req, res) => {
   try {
     const transactions = await Transaction.find({ member: req.params.id })
@@ -89,8 +75,6 @@ router.get("/:id/transactions", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── POST /api/members ─── Register new member
 router.post("/", requirePermission("manageMembers"), async (req, res) => {
   try {
     const member = new Member(req.body);
@@ -103,8 +87,6 @@ router.post("/", requirePermission("manageMembers"), async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 });
-
-// ─── PUT /api/members/:id ─── Update member
 router.put("/:id", requirePermission("manageMembers"), async (req, res) => {
   try {
     const member = await Member.findByIdAndUpdate(req.params.id, req.body, {
@@ -118,8 +100,6 @@ router.put("/:id", requirePermission("manageMembers"), async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 });
-
-// ─── DELETE /api/members/:id ─── Delete member
 router.delete("/:id", requirePermission("manageMembers"), async (req, res) => {
   try {
     const activeBorrows = await Transaction.countDocuments({
@@ -140,5 +120,4 @@ router.delete("/:id", requirePermission("manageMembers"), async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
 module.exports = router;
