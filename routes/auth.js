@@ -3,29 +3,20 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { protect, adminOnly } = require("../middleware/auth");
-
 const JWT_SECRET = process.env.JWT_SECRET || "bibliotheca_super_secret_jwt_key_2024";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "8h";
-
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MINUTES = 15;
-
-// ─── POST /api/auth/login ─── Login
 router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
-
     if (!username || !password) {
       return res.status(400).json({ success: false, message: "Username and password are required." });
     }
-
     const user = await User.findOne({ username: username.toLowerCase().trim() }).select("+password");
-
     if (!user) {
       return res.status(401).json({ success: false, message: "Invalid username or password." });
     }
-
-    // Check if locked
     if (user.isLocked()) {
       const remaining = Math.ceil((user.lockedUntil - Date.now()) / 60000);
       return res.status(403).json({
@@ -33,15 +24,11 @@ router.post("/login", async (req, res) => {
         message: `Account locked. Try again in ${remaining} minute(s).`,
       });
     }
-
     if (!user.isActive) {
       return res.status(403).json({ success: false, message: "Account deactivated. Contact administrator." });
     }
-
     const isMatch = await user.comparePassword(password);
-
     if (!isMatch) {
-      // Increment failed attempts
       user.loginAttempts += 1;
       if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
         user.lockedUntil = new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000);
@@ -57,19 +44,15 @@ router.post("/login", async (req, res) => {
         message: `Invalid username or password. ${MAX_LOGIN_ATTEMPTS - user.loginAttempts} attempt(s) remaining.`,
       });
     }
-
-    // Reset failed attempts on success
     user.loginAttempts = 0;
     user.lockedUntil = undefined;
     user.lastLogin = new Date();
     await user.save();
-
     const token = jwt.sign(
       { id: user._id, role: user.role, username: user.username },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
-
     res.json({
       success: true,
       message: `Welcome back, ${user.fullName}!`,
@@ -89,8 +72,6 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── GET /api/auth/me ─── Get current user profile
 router.get("/me", protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).populate("createdBy", "fullName username");
@@ -99,41 +80,27 @@ router.get("/me", protect, async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── PUT /api/auth/change-password ─── Change own password
 router.put("/change-password", protect, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, message: "Both current and new password are required." });
     }
-
     if (newPassword.length < 6) {
       return res.status(400).json({ success: false, message: "New password must be at least 6 characters." });
     }
-
     const user = await User.findById(req.user._id).select("+password");
     const isMatch = await user.comparePassword(currentPassword);
-
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Current password is incorrect." });
     }
-
     user.password = newPassword;
     await user.save();
-
     res.json({ success: true, message: "Password changed successfully." });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ════════════════════════════════════════════════════════
-//  ADMIN ONLY — Issuer Account Management
-// ════════════════════════════════════════════════════════
-
-// ─── GET /api/auth/issuers ─── List all issuer accounts
 router.get("/issuers", protect, adminOnly, async (req, res) => {
   try {
     const { search, isActive, page = 1, limit = 20 } = req.query;
@@ -147,7 +114,6 @@ router.get("/issuers", protect, adminOnly, async (req, res) => {
       ];
     }
     if (isActive !== undefined) query.isActive = isActive === "true";
-
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [issuers, total] = await Promise.all([
       User.find(query)
@@ -157,7 +123,6 @@ router.get("/issuers", protect, adminOnly, async (req, res) => {
         .limit(parseInt(limit)),
       User.countDocuments(query),
     ]);
-
     res.json({
       success: true,
       data: issuers,
@@ -167,21 +132,16 @@ router.get("/issuers", protect, adminOnly, async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── POST /api/auth/issuers ─── Create issuer account
 router.post("/issuers", protect, adminOnly, async (req, res) => {
   try {
     const { username, password, fullName, email, phone, permissions } = req.body;
-
     if (!username || !password || !fullName) {
       return res.status(400).json({ success: false, message: "Username, password, and full name are required." });
     }
-
     const existing = await User.findOne({ username: username.toLowerCase().trim() });
     if (existing) {
       return res.status(400).json({ success: false, message: "Username already taken." });
     }
-
     const issuer = new User({
       username,
       password,
@@ -198,9 +158,7 @@ router.post("/issuers", protect, adminOnly, async (req, res) => {
         viewReports: permissions?.viewReports ?? false,
       },
     });
-
     await issuer.save();
-
     res.status(201).json({
       success: true,
       data: issuer,
@@ -213,18 +171,14 @@ router.post("/issuers", protect, adminOnly, async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 });
-
-// ─── PUT /api/auth/issuers/:id ─── Update issuer account
 router.put("/issuers/:id", protect, adminOnly, async (req, res) => {
   try {
     const { fullName, email, phone, isActive, permissions, password } = req.body;
-
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: "User not found." });
     if (user.role === "admin" && req.user._id.toString() !== user._id.toString()) {
       return res.status(403).json({ success: false, message: "Cannot modify another admin account." });
     }
-
     if (fullName) user.fullName = fullName;
     if (email !== undefined) user.email = email;
     if (phone !== undefined) user.phone = phone;
@@ -234,36 +188,27 @@ router.put("/issuers/:id", protect, adminOnly, async (req, res) => {
       if (password.length < 6) return res.status(400).json({ success: false, message: "Password must be at least 6 characters." });
       user.password = password;
     }
-
-    // Unlock if admin manually re-enables
     if (isActive === true) {
       user.loginAttempts = 0;
       user.lockedUntil = undefined;
     }
-
     await user.save();
-
     res.json({ success: true, data: user, message: "Account updated successfully." });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
 });
-
-// ─── DELETE /api/auth/issuers/:id ─── Delete issuer account
 router.delete("/issuers/:id", protect, adminOnly, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: "User not found." });
     if (user.role === "admin") return res.status(403).json({ success: false, message: "Cannot delete an admin account." });
-
     await User.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: `Issuer account '${user.username}' deleted.` });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── PUT /api/auth/issuers/:id/reset-password ─── Admin resets issuer password
 router.put("/issuers/:id/reset-password", protect, adminOnly, async (req, res) => {
   try {
     const { newPassword } = req.body;
@@ -272,16 +217,13 @@ router.put("/issuers/:id/reset-password", protect, adminOnly, async (req, res) =
     }
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: "User not found." });
-
     user.password = newPassword;
     user.loginAttempts = 0;
     user.lockedUntil = undefined;
     await user.save();
-
     res.json({ success: true, message: `Password reset for '${user.username}'.` });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
 });
-
 module.exports = router;
