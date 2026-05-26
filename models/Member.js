@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const memberSchema = new mongoose.Schema(
   {
     memberId: {
@@ -73,8 +72,6 @@ const memberSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-// Auto-generate member ID
 memberSchema.pre("save", async function (next) {
   if (!this.memberId) {
     const count = await mongoose.model("Member").countDocuments();
@@ -82,5 +79,4 @@ memberSchema.pre("save", async function (next) {
   }
   next();
 });
-
 module.exports = mongoose.model("Member", memberSchema);
