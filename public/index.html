@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bibliotheca — Library Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0e0c09; --surface: #16130e; --surface2: #1e1a13; --surface3: #26211a;
+      --border: #2e2820; --gold: #c9a84c; --gold-light: #e8c97a; --gold-dim: rgba(201,168,76,0.15);
+      --amber: #d4883a; --text: #f0e8d8; --text-muted: #8a7e6e; --text-dim: #5a5042;
+      --green: #4caf7d; --red: #e06060; --blue: #6ca3c8; --purple: #a07cc8;
+      --radius: 8px; --radius-lg: 14px; --shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+    /* ── LOGIN SCREEN ── */
+    #loginScreen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 30% 40%, rgba(201,168,76,0.06) 0%, transparent 60%),
+                  radial-gradient(ellipse at 70% 80%, rgba(212,136,58,0.04) 0%, transparent 50%), var(--bg);
+      padding: 20px;
+    }
+    .login-box {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 48px 44px; width: 100%; max-width: 440px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+      animation: fadeUp .4s ease;
+    }
+    @keyframes fadeUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .login-logo { text-align: center; margin-bottom: 36px; }
+    .login-logo .lib-icon { font-size: 44px; margin-bottom: 12px; display: block; }
+    .login-logo h1 { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--gold); }
+    .login-logo p { color: var(--text-muted); font-size: 13px; margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
+    .role-tabs { display: flex; background: var(--surface2); border-radius: 10px; padding: 4px; margin-bottom: 28px; border: 1px solid var(--border); }
+    .role-tab {
+      flex: 1; padding: 9px; text-align: center; border-radius: 8px; cursor: pointer;
+      font-size: 13px; font-weight: 500; color: var(--text-muted); transition: all .2s; user-select: none;
+    }
+    .role-tab.active { background: var(--gold-dim); color: var(--gold); border: 1px solid rgba(201,168,76,0.3); }
+    .login-form { display: flex; flex-direction: column; gap: 18px; }
+    .login-form label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 6px; }
+    .login-input {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-family: inherit; font-size: 14px; padding: 12px 16px; outline: none; transition: border-color .2s;
+    }
+    .login-input:focus { border-color: var(--gold); }
+    .login-input::placeholder { color: var(--text-dim); }
+    .input-wrap { position: relative; }
+    .pass-toggle {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 15px; padding: 2px;
+    }
+    .login-btn {
+      width: 100%; background: var(--gold); color: #0e0c09; border: none; border-radius: var(--radius);
+      padding: 13px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all .2s; margin-top: 4px;
+    }
+    .login-btn:hover { background: var(--gold-light); }
+    .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .login-error {
+      background: rgba(224,96,96,0.12); border: 1px solid rgba(224,96,96,0.3);
+      border-radius: var(--radius); padding: 11px 14px; font-size: 13px; color: var(--red);
+      display: none;
+    }
+    .login-error.show { display: block; }
+    .default-creds {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 12px 14px; font-size: 12px; color: var(--text-muted); margin-top: 20px; line-height: 1.8;
+    }
+    .default-creds strong { color: var(--gold); }
+
+    /* ── APP SHELL ── */
+    #appShell { display: none; }
+    #appShell.visible { display: flex; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 248px; min-height: 100vh; background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; position: fixed; top: 0; left: 0; z-index: 100; transition: transform .3s ease;
+    }
+    .sidebar-logo { padding: 26px 22px 18px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo h1 { font-family: 'Playfair Display', serif; font-size: 21px; color: var(--gold); }
+    .sidebar-logo span { font-size: 11px; color: var(--text-muted); font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
+    .nav-section { padding: 16px 10px; flex: 1; overflow-y: auto; }
+    .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); padding: 0 10px; margin-bottom: 6px; margin-top: 14px; }
+    .nav-label:first-child { margin-top: 0; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius);
+      cursor: pointer; font-size: 13.5px; font-weight: 400; color: var(--text-muted);
+      transition: all .15s; margin-bottom: 2px; user-select: none;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--gold-dim); color: var(--gold); font-weight: 500; }
+    .nav-item .icon { font-size: 15px; width: 20px; text-align: center; }
+    .nav-item.admin-only { display: none; }
+    body.role-admin .nav-item.admin-only { display: flex; }
+
+    /* User profile in sidebar */
+    .sidebar-user {
+      padding: 14px 16px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .user-avatar {
+      width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .user-avatar.admin { background: rgba(201,168,76,0.2); color: var(--gold); }
+    .user-avatar.issuer { background: rgba(108,163,200,0.2); color: var(--blue); }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: 11px; color: var(--text-muted); text-transform: capitalize; }
+    .logout-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; transition: color .2s; }
+    .logout-btn:hover { color: var(--red); }
+
+    /* ── MAIN ── */
+    .main { margin-left: 248px; flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px;
+      height: 60px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-title { font-family: 'Playfair Display', serif; font-size: 19px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    
+    .topbar-user-badge {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 20px;
+      padding: 5px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px;
+    }
+
+    /* ── BTN ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px;
+      border-radius: var(--radius); font-size: 13px; font-weight: 500; font-family: inherit;
+      cursor: pointer; border: none; transition: all .2s; text-decoration: none;
+    }
+    .btn-primary { background: var(--gold); color: #0e0c09; }
+    .btn-primary:hover { background: var(--gold-light); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-danger { background: rgba(224,96,96,0.12); color: var(--red); border: 1px solid rgba(224,96,96,0.25); }
+    .btn-danger:hover { background: rgba(224,96,96,0.22); }
+    .btn-success { background: rgba(76,175,125,0.12); color: var(--green); border: 1px solid rgba(76,175,125,0.25); }
+    .btn-success:hover { background: rgba(76,175,125,0.22); }
+    .btn-sm { padding: 4px 10px; font-size: 11.5px; }
+
+    /* ── PAGE ── */
+    .page { display: none; flex: 1; padding: 28px; }
+    .page.active { display: block; }
+
+    /* ── STATS ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 20px 22px; position: relative; overflow: hidden; transition: border-color .2s;
+    }
+    .stat-card:hover { border-color: var(--gold); }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold), var(--amber)); opacity: 0; transition: opacity .2s; }
+    .stat-card:hover::before { opacity: 1; }
+    .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    .stat-value { font-size: 34px; font-family: 'Playfair Display', serif; color: var(--gold); line-height: 1; }
+    .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+    .stat-icon { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 34px; opacity: 0.07; }
+
+    /* ── TABLE CARD ── */
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .table-header { padding: 16px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .table-title { font-family: 'Playfair Display', serif; font-size: 16px; }
+    .table-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .filter-select {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-size: 12.5px; font-family: inherit; padding: 6px 10px; cursor: pointer; outline: none;
+    }
+    .filter-select:focus { border-color: var(--gold); }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: var(--surface2); padding: 10px 14px; text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 11px 14px; font-size: 13px; vertical-align: middle; }
+    .empty-state { text-align: center; padding: 52px 20px; color: var(--text-muted); }
+    .empty-state .big-icon { font-size: 44px; margin-bottom: 10px; opacity: 0.5; }
+
+    /* ── BADGE ── */
+    .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 20px; font-size: 10.5px; font-weight: 600; }
+    .badge-green { background: rgba(76,175,125,0.15); color: var(--green); }
+    .badge-red { background: rgba(224,96,96,0.15); color: var(--red); }
+    .badge-amber { background: rgba(212,136,58,0.15); color: var(--amber); }
+    .badge-blue { background: rgba(108,163,200,0.15); color: var(--blue); }
+    .badge-purple { background: rgba(160,124,200,0.15); color: var(--purple); }
+    .badge-muted { background: var(--surface3); color: var(--text-muted); }
+    .badge-gold { background: rgba(201,168,76,0.15); color: var(--gold); }
+
+    /* ── MODAL ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.72); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.6); animation: modalIn .2s ease; }
+    @keyframes modalIn { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-header { padding: 22px 26px 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .modal-header h2 { font-family: 'Playfair Display', serif; font-size: 19px; }
+    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 19px; cursor: pointer; line-height: 1; padding: 4px; border-radius: 4px; transition: color .2s; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 0 26px 26px; }
+
+    /* ── FORM ── */
+    .form-grid { display: grid; gap: 14px; }
+    .form-grid-2 { grid-template-columns: 1fr 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
+    .form-control { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: inherit; font-size: 13.5px; padding: 9px 13px; outline: none; transition: border-color .2s; width: 100%; }
+    .form-control:focus { border-color: var(--gold); }
+    .form-control::placeholder { color: var(--text-dim); }
+    textarea.form-control { resize: vertical; min-height: 72px; }
+    .form-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+
+    /* Checkbox permission group */
+    .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .perm-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); font-size: 12.5px; cursor: pointer; }
+    .perm-item input[type="checkbox"] { accent-color: var(--gold); width: 14px; height: 14px; cursor: pointer; }
+    .perm-item label { cursor: pointer; color: var(--text-muted); }
+    .perm-item:has(input:checked) { border-color: rgba(201,168,76,0.4); background: var(--gold-dim); }
+    .perm-item:has(input:checked) label { color: var(--gold); }
+
+    /* ── PAGINATION ── */
+    .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); }
+    .pagination-btns { display: flex; gap: 5px; }
+    .page-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 6px; font-size: 12.5px; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .page-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .page-btn.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── TOAST ── */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; font-size: 13px; min-width: 280px; max-width: 380px; display: flex; align-items: flex-start; gap: 9px; box-shadow: var(--shadow); animation: toastIn .25s ease; }
+    .toast.success { border-left: 3px solid var(--green); }
+    .toast.error { border-left: 3px solid var(--red); }
+    .toast.info { border-left: 3px solid var(--gold); }
+    @keyframes toastIn { from { transform: translateX(36px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* ── Misc ── */
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-row td { text-align: center; padding: 36px; color: var(--text-muted); }
+    .overdue { color: var(--red) !important; font-weight: 600; }
+    .due-soon { color: var(--amber) !important; }
+
+    /* activity */
+    .activity-list { list-style: none; }
+    .activity-item { display: flex; align-items: flex-start; gap: 10px; padding: 11px 18px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); margin-top: 4px; flex-shrink: 0; }
+    .activity-dot.red { background: var(--red); }
+    .activity-dot.green { background: var(--green); }
+    .activity-text { color: var(--text-muted); flex: 1; }
+    .activity-text strong { color: var(--text); }
+    .activity-time { font-size: 10.5px; color: var(--text-dim); white-space: nowrap; }
+
+    /* role-based visibility */
+    .admin-feature { display: none; }
+    body.role-admin .admin-feature { display: initial; }
+    .admin-flex { display: none; }
+    body.role-admin .admin-flex { display: flex; }
+    .admin-block { display: none; }
+    body.role-admin .admin-block { display: block; }
+
+    /* ── Responsive ── */
+    .hamburger { display: none; background: none; border: none; color: var(--text); font-size: 21px; cursor: pointer; padding: 4px; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .main { margin-left: 0; }
+      .hamburger { display: block; }
+      .form-grid-2 { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 520px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .page { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="lib-icon">🏛️</span>
+      <h1>Bibliotheca</h1>
+      <p>Library Management System</p>
+    </div>
+
+    <div class="role-tabs">
+      <div class="role-tab active" id="tabAdmin" onclick="switchRole('admin')">👑 Administrator</div>
+      <div class="role-tab" id="tabIssuer" onclick="switchRole('issuer')">📋 Book Issuer</div>
+    </div>
+
+    <div id="loginError" class="login-error"></div>
+
+    <div class="login-form">
+      <div>
+        <label>Username</label>
+        <input type="text" class="login-input" id="loginUsername" placeholder="Enter your username" autocomplete="username" />
+      </div>
+      <div>
+        <label>Password</label>
+        <div class="input-wrap">
+          <input type="password" class="login-input" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+          <button class="pass-toggle" onclick="togglePass()" type="button" id="passToggle">👁</button>
+        </div>
+      </div>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
+    </div>
+
+    <div class="default-creds" id="defaultCreds">
+      <strong>Demo Credentials</strong><br/>
+      Issuer: <strong>issuer1</strong> / issuer123
+    </div>
+  </div>
+</div>
+
+<div id="appShell">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <h1>Bibliotheca</h1>
+      <span>Library System</span>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard',this)"><span class="icon">🏛️</span> Dashboard</div>
+
+      <div class="nav-label">Catalogue</div>
+      <div class="nav-item" data-page="books" onclick="navigate('books',this)"><span class="icon">📚</span> Books</div>
+      <div class="nav-item" data-page="members" onclick="navigate('members',this)"><span class="icon">👥</span> Members</div>
+
+      <div class="nav-label">Circulation</div>
+      <div class="nav-item" data-page="transactions" onclick="navigate('transactions',this)"><span class="icon">📋</span> Transactions</div>
+      <div class="nav-item" data-page="borrow" onclick="navigate('borrow',this)"><span class="icon">📖</span> Issue Book</div>
+      <div class="nav-item" data-page="returns" onclick="navigate('returns',this)"><span class="icon">↩️</span> Returns</div>
+
+      <div class="nav-label admin-only">Administration</div>
+      <div class="nav-item admin-only" data-page="issuers" onclick="navigate('issuers',this)"><span class="icon">🔑</span> Manage Issuers</div>
+      <div class="nav-item admin-only" data-page="myprofile" onclick="navigate('myprofile',this)"><span class="icon">⚙️</span> Settings</div>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sidebarAvatar">A</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebarName">Loading…</div>
+        <div class="user-role" id="sidebarRole">—</div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()" title="Logout">⏏</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="hamburger" onclick="openSidebar()">☰</button>
+        <span class="topbar-title" id="pageTitle">Dashboard</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-user-badge">
+          <span id="topbarRoleBadge">👑</span>
+          <span id="topbarUsername">admin</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Books</div><div class="stat-value" id="s-books">—</div><div class="stat-sub" id="s-avail">—</div><div class="stat-icon">📚</div></div>
+        <div class="stat-card"><div class="stat-label">Members</div><div class="stat-value" id="s-members">—</div><div class="stat-sub" id="s-active">—</div><div class="stat-icon">👥</div></div>
+        <div class="stat-card"><div class="stat-label">Active Borrows</div><div class="stat-value" id="s-borrows">—</div><div class="stat-sub" id="s-overdue">—</div><div class="stat-icon">📖</div></div>
+        <div class="stat-card"><div class="stat-label">Pending Fines</div><div class="stat-value" id="s-fines">—</div><div class="stat-sub">Awaiting collection</div><div class="stat-icon">💰</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">Recent Activity</span></div>
+          <ul class="activity-list" id="recentActivity"><li class="activity-item"><div class="activity-text">Loading…</div></li></ul>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">Overdue Books</span><span class="badge badge-red" id="overdueCount">0</span></div>
+          <table><thead><tr><th>Book</th><th>Member</th><th>Due</th></tr></thead>
+          <tbody id="overdueTable"><tr class="loading-row"><td colspan="3"><div class="spinner"></div></td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-books">
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-title">📚 Book Catalogue</span>
+          <div class="table-actions">
+            <select class="filter-select" id="bookCatFilter" onchange="loadBooks()"><option value="">All Categories</option><option>Fiction</option><option>Non-Fiction</option><option>Science</option><option>Technology</option><option>History</option><option>Biography</option><option>Children</option><option>Philosophy</option><option>Other</option></select>
+            <select class="filter-select" id="bookStatFilter" onchange="loadBooks()"><option value="">All Status</option><option>Available</option><option>Out of Stock</option></select>
+            <button class="btn btn-primary admin-feature" onclick="openBookModal()">+ Add Book</button>
+          </div>
+        </div>
+        <table><thead><tr><th>Title / Author</th><th>ISBN</th><th>Category</th><th>Copies</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="booksTable"><tr class="loading-row"><td colspan="6"><div class="spinner"></div></td></tr></tbody></table>
+        <div class="pagination"><span id="booksPaginationInfo">—</span><div class="pagination-btns" id="booksPaginationBtns"></div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-members">
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-title">👥 Library Members</span>
+          <div class="table-actions">
+            <select class="filter-select" id="memStatFilter" onchange="loadMembers()"><option value="">All Status</option><option>Active</option><option>Inactive</option><option>Suspended</option></select>
+            <select class="filter-select" id="memTypeFilter" onchange="loadMembers()"><option value="">All Types</option><option>Standard</option><option>Premium</option><option>Student</option><option>Senior</option></select>
+            <button class="btn btn-primary admin-feature" onclick="openMemberModal()">+ Add Member</button>
+          </div>
+        </div>
+        <table><thead><tr><th>Member ID</th><th>Name</th><th>Email</th><th>Type</th><th>Status</th><th>Fine</th><th>Actions</th></tr></thead>
+        <tbody id="membersTable"><tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr></tbody></table>
+        <div class="pagination"><span id="membersPaginationInfo">—</span><div class="pagination-btns" id="membersPaginationBtns"></div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-transactions">
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-title">📋 Transactions</span>
+          <div class="table-actions">
+            <select class="filter-select" id="txStatFilter" onchange="loadTransactions()"><option value="">All Status</option><option>Active</option><option>Overdue</option><option>Returned</option></select>
+          </div>
+        </div>
+        <table><thead><tr><th>Txn ID</th><th>Member</th><th>Book</th><th>Issuer</th><th>Borrow</th><th>Due</th><th>Returned</th><th>Status</th><th>Fine</th><th>Action</th></tr></thead>
+        <tbody id="transactionsTable"><tr class="loading-row"><td colspan="10"><div class="spinner"></div></td></tr></tbody></table>
+        <div class="pagination"><span id="txPaginationInfo">—</span><div class="pagination-btns" id="txPaginationBtns"></div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-borrow">
+      <div style="max-width:620px;margin:0 auto;">
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">📖 Issue Book to Member</span></div>
+          <div style="padding:26px;">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Select Member *</label>
+                <input type="text" id="borrowSearchMember" class="form-control" placeholder="Search member by name..." oninput="filterBorrowSelects()" style="margin-bottom: 6px;" />
+                <select class="form-control" id="borrowMemberId"><option value="">Loading…</option></select>
+              </div>
+              <div class="form-group">
+                <label>Select Book *</label>
+                <input type="text" id="borrowSearchBook" class="form-control" placeholder="Search book by title..." oninput="filterBorrowSelects()" style="margin-bottom: 6px;" />
+                <select class="form-control" id="borrowBookId"><option value="">Loading…</option></select>
+              </div>
+              <div class="form-group"><label>Notes (optional)</label><textarea class="form-control" id="borrowNotes" rows="2" placeholder="Any additional notes…"></textarea></div>
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;font-size:12.5px;color:var(--text-muted);">
+                <strong style="color:var(--gold)">ℹ Borrowing Policy</strong><br/>
+                • Max 3 books per member • Loan period: 14 days<br/>• Fine: ₹5/day overdue • Members with unpaid fines blocked
+              </div>
+            </div>
+            <div class="form-footer"><button class="btn btn-primary" onclick="issueBorrow()">📖 Issue Book</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-returns">
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-title">↩️ Active Borrows — Process Returns</span>
+          <select class="filter-select" id="returnStatFilter" onchange="loadReturns()"><option value="Active">Active Only</option><option value="Overdue">Overdue Only</option><option value="">All</option></select>
+        </div>
+        <table><thead><tr><th>Txn ID</th><th>Member</th><th>Book</th><th>Due Date</th><th>Status</th><th>Est. Fine</th><th>Action</th></tr></thead>
+        <tbody id="returnsTable"><tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="page" id="page-issuers">
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-title">🔑 Issuer Accounts</span>
+          <div class="table-actions">
+            <select class="filter-select" id="issuerActiveFilter" onchange="loadIssuers()"><option value="">All</option><option value="true">Active</option><option value="false">Inactive</option></select>
+            <button class="btn btn-primary" onclick="openIssuerModal()">+ Create Issuer</button>
+          </div>
+        </div>
+        <table><thead><tr><th>Emp ID</th><th>Username</th><th>Full Name</th><th>Email</th><th>Permissions</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+        <tbody id="issuersTable"><tr class="loading-row"><td colspan="8"><div class="spinner"></div></td></tr></tbody></table>
+        <div class="pagination"><span id="issuersPaginationInfo">—</span><div class="pagination-btns" id="issuersPaginationBtns"></div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-myprofile">
+      <div style="max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px;">
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">⚙️ My Profile</span></div>
+          <div style="padding:26px;">
+            <div id="profileInfo" style="display:grid;gap:12px;font-size:13.5px;"></div>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">🔒 Change Password</span></div>
+          <div style="padding:26px;">
+            <div class="form-grid">
+              <div class="form-group"><label>Current Password</label><input type="password" class="form-control" id="curPwd" placeholder="Current password" /></div>
+              <div class="form-group"><label>New Password</label><input type="password" class="form-control" id="newPwd" placeholder="Minimum 6 characters" /></div>
+              <div class="form-group"><label>Confirm New Password</label><input type="password" class="form-control" id="confPwd" placeholder="Repeat new password" /></div>
+            </div>
+            <div class="form-footer"><button class="btn btn-primary" onclick="changePassword()">Update Password</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div></div><div class="modal-overlay" id="bookModal">
+  <div class="modal">
+    <div class="modal-header"><h2 id="bookModalTitle">Add Book</h2><button class="modal-close" onclick="closeModal('bookModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="bookId" />
+      <div class="form-grid form-grid-2">
+        <div class="form-group" style="grid-column:1/-1"><label>Title *</label><input type="text" class="form-control" id="bookTitle" placeholder="Book title" /></div>
+        <div class="form-group"><label>Author *</label><input type="text" class="form-control" id="bookAuthor" placeholder="Author name" /></div>
+        <div class="form-group"><label>ISBN *</label><input type="text" class="form-control" id="bookIsbn" placeholder="978-XXXXXXXXXX" /></div>
+        <div class="form-group"><label>Category *</label><select class="form-control" id="bookCategory"><option value="">Select</option><option>Fiction</option><option>Non-Fiction</option><option>Science</option><option>Technology</option><option>History</option><option>Biography</option><option>Children</option><option>Philosophy</option><option>Other</option></select></div>
+        <div class="form-group"><label>Publisher</label><input type="text" class="form-control" id="bookPub" placeholder="Publisher" /></div>
+        <div class="form-group"><label>Year</label><input type="number" class="form-control" id="bookYear" placeholder="2020" /></div>
+        <div class="form-group"><label>Total Copies *</label><input type="number" class="form-control" id="bookCopies" placeholder="0" min="0" /></div>
+        <div class="form-group"><label>Pages</label><input type="number" class="form-control" id="bookPages" placeholder="320" /></div>
+        <div class="form-group"><label>Language</label><input type="text" class="form-control" id="bookLang" value="English" /></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Description</label><textarea class="form-control" id="bookDesc"></textarea></div>
+      </div>
+      <div class="form-footer"><button class="btn btn-secondary" onclick="closeModal('bookModal')">Cancel</button><button class="btn btn-primary" onclick="saveBook()">Save Book</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="memberModal">
+  <div class="modal">
+    <div class="modal-header"><h2 id="memberModalTitle">Register Member</h2><button class="modal-close" onclick="closeModal('memberModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="memberId2" />
+      <div class="form-grid form-grid-2">
+        <div class="form-group" style="grid-column:1/-1"><label>Full Name *</label><input type="text" class="form-control" id="memName" placeholder="Full name" /></div>
+        <div class="form-group"><label>Email *</label><input type="email" class="form-control" id="memEmail" placeholder="email@example.com" /></div>
+        <div class="form-group"><label>Phone</label><input type="tel" class="form-control" id="memPhone" placeholder="+91 9876543210" /></div>
+        <div class="form-group"><label>Membership Type</label><select class="form-control" id="memType"><option>Standard</option><option>Premium</option><option>Student</option><option>Senior</option></select></div>
+        <div class="form-group"><label>Status</label><select class="form-control" id="memStatus"><option>Active</option><option>Inactive</option><option>Suspended</option></select></div>
+        <div class="form-group"><label>City</label><input type="text" class="form-control" id="memCity" /></div>
+        <div class="form-group"><label>State</label><input type="text" class="form-control" id="memState" /></div>
+      </div>
+      <div class="form-footer"><button class="btn btn-secondary" onclick="closeModal('memberModal')">Cancel</button><button class="btn btn-primary" onclick="saveMember()">Save Member</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="issuerModal">
+  <div class="modal">
+    <div class="modal-header"><h2 id="issuerModalTitle">Create Issuer Account</h2><button class="modal-close" onclick="closeModal('issuerModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="issuerId" />
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label>Username *</label><input type="text" class="form-control" id="issuerUsername" placeholder="e.g. rajesh_k" /></div>
+        <div class="form-group"><label>Full Name *</label><input type="text" class="form-control" id="issuerFullName" placeholder="Full name" /></div>
+        <div class="form-group">
+          <label id="issuerPwdLabel">Password *</label>
+          <div class="input-wrap">
+            <input type="password" class="form-control" id="issuerPassword" placeholder="Minimum 6 characters" />
+            <button class="pass-toggle" type="button" onclick="toggleIssuerPass()">👁</button>
+          </div>
+        </div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-control" id="issuerEmail" placeholder="email@library.com" /></div>
+        <div class="form-group"><label>Phone</label><input type="tel" class="form-control" id="issuerPhone" placeholder="+91 9876543210" /></div>
+        <div class="form-group"><label>Account Status</label><select class="form-control" id="issuerActive"><option value="true">Active</option><option value="false">Inactive</option></select></div>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px;">Permissions</div>
+        <div class="perm-grid">
+          <label class="perm-item"><input type="checkbox" id="perm-manageBooks" checked/><label for="perm-manageBooks">📚 Manage Books</label></label>
+          <label class="perm-item"><input type="checkbox" id="perm-manageMembers"/><label for="perm-manageMembers">👥 Manage Members</label></label>
+          <label class="perm-item"><input type="checkbox" id="perm-issueBooks" checked/><label for="perm-issueBooks">📖 Issue Books</label></label>
+          <label class="perm-item"><input type="checkbox" id="perm-returnBooks" checked/><label for="perm-returnBooks">↩️ Return Books</label></label>
+          <label class="perm-item"><input type="checkbox" id="perm-viewReports"/><label for="perm-viewReports">📊 View Reports</label></label>
+        </div>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-secondary" onclick="closeModal('issuerModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveIssuer()">Save Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="resetPwdModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header"><h2>Reset Password</h2><button class="modal-close" onclick="closeModal('resetPwdModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="resetUserId" />
+      <div class="form-grid">
+        <div style="font-size:13px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;">
+          Set a new password for: <strong id="resetUserName" style="color:var(--text)"></strong>
+        </div>
+        <div class="form-group">
+          <label>New Password *</label>
+          <input type="password" class="form-control" id="resetNewPwd" placeholder="Minimum 6 characters" />
+        </div>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-secondary" onclick="closeModal('resetPwdModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="doResetPassword()">Reset Password</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+const API = '/api';
+let authToken = localStorage.getItem('lms_token');
+let currentUser = JSON.parse(localStorage.getItem('lms_user') || 'null');
+let booksPage = 1, membersPage = 1, txPage = 1, issuersPage = 1;
+
+// ── Auth Header ────────────────────────────────────────────────
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` };
+}
+
+async function api(url, method = 'GET', body = null) {
+  const opts = { method, headers: authHeaders() };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + url, opts);
+  const data = await res.json();
+  if (res.status === 401) { doLogout(); throw new Error('Session expired. Please log in again.'); }
+  if (!data.success && res.status >= 400) throw new Error(data.message || 'API Error');
+  return data;
+}
+
+// ── LOGIN ──────────────────────────────────────────────────────
+let selectedRole = 'admin';
+function switchRole(role) {
+  selectedRole = role;
+  document.getElementById('tabAdmin').classList.toggle('active', role === 'admin');
+  document.getElementById('tabIssuer').classList.toggle('active', role === 'issuer');
+  document.getElementById('loginUsername').value = role === 'admin' ? 'admin' : 'issuer1';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').classList.remove('show');
+}
+
+function togglePass() {
+  const p = document.getElementById('loginPassword');
+  p.type = p.type === 'password' ? 'text' : 'password';
+  document.getElementById('passToggle').textContent = p.type === 'password' ? '👁' : '🙈';
+}
+function toggleIssuerPass() {
+  const p = document.getElementById('issuerPassword');
+  p.type = p.type === 'password' ? 'text' : 'password';
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  if (!username || !password) { showLoginError('Please enter username and password.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  errEl.classList.remove('show');
+
+  try {
+    const data = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    }).then(r => r.json());
+
+    if (!data.success) { showLoginError(data.message); return; }
+    if (data.user.role !== selectedRole) {
+      showLoginError(`This account is a '${data.user.role}'. Please select the correct role tab.`);
+      return;
+    }
+
+    authToken = data.token;
+    currentUser = data.user;
+    localStorage.setItem('lms_token', authToken);
+    localStorage.setItem('lms_user', JSON.stringify(currentUser));
+    launchApp();
+  } catch (e) {
+    showLoginError('Server error. Is the server running?');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function launchApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').classList.add('visible');
+
+  // Set role class on body
+  document.body.classList.remove('role-admin', 'role-issuer');
+  document.body.classList.add('role-' + currentUser.role);
+
+  // Populate user info
+  const initials = currentUser.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  document.getElementById('sidebarAvatar').textContent = initials;
+  document.getElementById('sidebarAvatar').className = `user-avatar ${currentUser.role}`;
+  document.getElementById('sidebarName').textContent = currentUser.fullName;
+  document.getElementById('sidebarRole').textContent = currentUser.role === 'admin' ? '👑 Administrator' : '📋 Book Issuer';
+  document.getElementById('topbarUsername').textContent = currentUser.username;
+  document.getElementById('topbarRoleBadge').textContent = currentUser.role === 'admin' ? '👑' : '📋';
+
+  loadDashboard();
+}
+
+function doLogout() {
+  localStorage.removeItem('lms_token');
+  localStorage.removeItem('lms_user');
+  authToken = null; currentUser = null;
+  document.getElementById('appShell').classList.remove('visible');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').classList.remove('show');
+}
+
+// Auto-login if token exists
+if (authToken && currentUser) { launchApp(); }
+
+// ── Navigation ─────────────────────────────────────────────────
+function navigate(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (el) el.classList.add('active');
+  const titles = { dashboard:'Dashboard', books:'Book Catalogue', members:'Library Members', transactions:'Transactions', borrow:'Issue Book', returns:'Returns', issuers:'Manage Issuers', myprofile:'Settings' };
+  document.getElementById('pageTitle').textContent = titles[page] || page;
+  closeSidebar();
+  if (page==='dashboard') loadDashboard();
+  else if (page==='books') loadBooks();
+  else if (page==='members') loadMembers();
+  else if (page==='transactions') loadTransactions();
+  else if (page==='borrow') loadBorrowSelects();
+  else if (page==='returns') loadReturns();
+  else if (page==='issuers') loadIssuers();
+  else if (page==='myprofile') loadProfile();
+}
+
+function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('open'); }
+
+// ── Dashboard ──────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [bk, mb, tx] = await Promise.all([api('/books/stats'), api('/members/stats'), api('/transactions/stats')]);
+    document.getElementById('s-books').textContent = bk.data.total;
+    document.getElementById('s-avail').textContent = `${bk.data.available} available`;
+    document.getElementById('s-members').textContent = mb.data.total;
+    document.getElementById('s-active').textContent = `${mb.data.active} active`;
+    document.getElementById('s-borrows').textContent = tx.data.active;
+    document.getElementById('s-overdue').textContent = `${tx.data.overdue} overdue`;
+    document.getElementById('s-fines').textContent = `₹${tx.data.totalFines}`;
+    loadRecentActivity(); loadOverdueTable();
+  } catch(e) { toast(e.message, 'error'); }
+}
+async function loadRecentActivity() {
+  try {
+    const { data } = await api('/transactions?limit=6');
+    const ul = document.getElementById('recentActivity');
+    if (!data.length) { ul.innerHTML = '<li class="activity-item"><div class="activity-text" style="color:var(--text-dim)">No transactions yet</div></li>'; return; }
+    ul.innerHTML = data.map(tx => {
+      const cls = tx.status==='Overdue'?'red':tx.status==='Returned'?'green':'';
+      return `<li class="activity-item"><div class="activity-dot ${cls}"></div><div class="activity-text"><strong>${tx.member?.name||'Unknown'}</strong> ${tx.type==='Borrow'?'borrowed':'returned'} <strong>"${tx.book?.title||'Unknown'}"</strong></div><span class="activity-time">${relTime(tx.createdAt)}</span></li>`;
+    }).join('');
+  } catch{}
+}
+async function loadOverdueTable() {
+  try {
+    const { data } = await api('/transactions?status=Overdue&limit=5');
+    document.getElementById('overdueCount').textContent = data.length;
+    const tb = document.getElementById('overdueTable');
+    if (!data.length) { tb.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:18px;color:var(--text-dim)">No overdue books 🎉</td></tr>'; return; }
+    tb.innerHTML = data.map(tx => `<tr><td style="font-weight:500">${tx.book?.title||'Unknown'}</td><td>${tx.member?.name||'Unknown'}</td><td class="overdue">${new Date(tx.dueDate).toLocaleDateString()}</td></tr>`).join('');
+  } catch{}
+}
+
+// ── Books ──────────────────────────────────────────────────────
+async function loadBooks(page = booksPage) {
+  booksPage = page;
+  const params = new URLSearchParams({ page, limit:10 });
+  if (document.getElementById('bookCatFilter').value) params.set('category', document.getElementById('bookCatFilter').value);
+  if (document.getElementById('bookStatFilter').value) params.set('status', document.getElementById('bookStatFilter').value);
+  const tb = document.getElementById('booksTable');
+  tb.innerHTML = '<tr class="loading-row"><td colspan="6"><div class="spinner"></div></td></tr>';
+  try {
+    const { data, pagination } = await api('/books?' + params);
+    const canEdit = currentUser.role==='admin' || currentUser.permissions?.manageBooks;
+    if (!data.length) { tb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="big-icon">📚</div><p>No books found</p></div></td></tr>'; }
+    else tb.innerHTML = data.map(b => `<tr>
+      <td><div style="font-weight:500">${b.title}</div><div style="font-size:11.5px;color:var(--text-muted)">${b.author}</div></td>
+      <td style="font-family:monospace;font-size:11.5px;color:var(--text-muted)">${b.isbn}</td>
+      <td><span class="badge badge-blue">${b.category}</span></td>
+      <td><span style="color:var(--green)">${b.availableCopies}</span><span style="color:var(--text-dim)">/${b.totalCopies}</span></td>
+      <td><span class="badge ${b.status==='Available'?'badge-green':'badge-red'}">${b.status}</span></td>
+      <td><div style="display:flex;gap:5px">
+        ${canEdit?`<button class="btn btn-secondary btn-sm" onclick="editBook('${b._id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteBook('${b._id}','${b.title}')">🗑️</button>`:'<span style="font-size:11px;color:var(--text-dim)">View only</span>'}
+      </div></td></tr>`).join('');
+    renderPagination('books', pagination);
+  } catch(e) { tb.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--red)">${e.message}</td></tr>`; }
+}
+function openBookModal(data=null) {
+  ['bookId','bookTitle','bookAuthor','bookIsbn','bookCategory','bookPub','bookYear','bookCopies','bookPages','bookLang','bookDesc'].forEach(id => {
+    const el = document.getElementById(id);
+    const map = { bookId:'_id', bookTitle:'title', bookAuthor:'author', bookIsbn:'isbn', bookCategory:'category', bookPub:'publisher', bookYear:'publishedYear', bookCopies:'totalCopies', bookPages:'pages', bookLang:'language', bookDesc:'description' };
+    el.value = data ? (data[map[id]] || (id==='bookLang'?'English':'')) : (id==='bookLang'?'English':'');
+  });
+  document.getElementById('bookModalTitle').textContent = data ? 'Edit Book' : 'Add New Book';
+  openModal('bookModal');
+}
+async function editBook(id) { try { const { data } = await api('/books/'+id); openBookModal(data); } catch(e) { toast(e.message,'error'); } }
+async function saveBook() {
+  const id = document.getElementById('bookId').value;
+  const body = { title:document.getElementById('bookTitle').value.trim(), author:document.getElementById('bookAuthor').value.trim(), isbn:document.getElementById('bookIsbn').value.trim(), category:document.getElementById('bookCategory').value, publisher:document.getElementById('bookPub').value.trim(), publishedYear:parseInt(document.getElementById('bookYear').value)||undefined, totalCopies:parseInt(document.getElementById('bookCopies').value), pages:parseInt(document.getElementById('bookPages').value)||undefined, language:document.getElementById('bookLang').value.trim(), description:document.getElementById('bookDesc').value.trim() };
+  if (!id) body.availableCopies = body.totalCopies;
+  try { if(id) { await api('/books/'+id,'PUT',body); toast('Book updated','success'); } else { await api('/books','POST',body); toast('Book added','success'); } closeModal('bookModal'); loadBooks(); } catch(e) { toast(e.message,'error'); }
+}
+async function deleteBook(id,title) {
+  if(!confirm(`Delete "${title}"?`)) return;
+  try { await api('/books/'+id,'DELETE'); toast('Book deleted','success'); loadBooks(); } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Members ────────────────────────────────────────────────────
+async function loadMembers(page = membersPage) {
+  membersPage = page;
+  const params = new URLSearchParams({ page, limit:10 });
+  if (document.getElementById('memStatFilter').value) params.set('status', document.getElementById('memStatFilter').value);
+  if (document.getElementById('memTypeFilter').value) params.set('membershipType', document.getElementById('memTypeFilter').value);
+  const tb = document.getElementById('membersTable');
+  tb.innerHTML = '<tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr>';
+  try {
+    const { data, pagination } = await api('/members?' + params);
+    const canEdit = currentUser.role==='admin' || currentUser.permissions?.manageMembers;
+    if (!data.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="big-icon">👥</div><p>No members found</p></div></td></tr>'; }
+    else tb.innerHTML = data.map(m => `<tr>
+      <td><span style="font-family:monospace;font-size:11.5px;color:var(--gold)">${m.memberId}</span></td>
+      <td style="font-weight:500">${m.name}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${m.email}</td>
+      <td><span class="badge badge-muted">${m.membershipType}</span></td>
+      <td><span class="badge ${m.status==='Active'?'badge-green':m.status==='Suspended'?'badge-red':'badge-muted'}">${m.status}</span></td>
+      <td style="${m.fineAmount>0?'color:var(--red);font-weight:600':'color:var(--text-muted)'}">
+        ${m.fineAmount>0?`₹${m.fineAmount} <button class="btn btn-success btn-sm" onclick="payFine('${m._id}','${m.name}',${m.fineAmount})">Pay</button>`:'—'}
+      </td>
+      <td><div style="display:flex;gap:5px">
+        ${canEdit?`<button class="btn btn-secondary btn-sm" onclick="editMember('${m._id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteMember('${m._id}','${m.name}')">🗑️</button>`:'<span style="font-size:11px;color:var(--text-dim)">View only</span>'}
+      </div></td></tr>`).join('');
+    renderPagination('members', pagination);
+  } catch(e) { tb.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--red)">${e.message}</td></tr>`; }
+}
+function openMemberModal(data=null) {
+  document.getElementById('memberId2').value = data?._id||'';
+  document.getElementById('memberModalTitle').textContent = data?'Edit Member':'Register Member';
+  document.getElementById('memName').value = data?.name||'';
+  document.getElementById('memEmail').value = data?.email||'';
+  document.getElementById('memPhone').value = data?.phone||'';
+  document.getElementById('memType').value = data?.membershipType||'Standard';
+  document.getElementById('memStatus').value = data?.status||'Active';
+  document.getElementById('memCity').value = data?.address?.city||'';
+  document.getElementById('memState').value = data?.address?.state||'';
+  openModal('memberModal');
+}
+async function editMember(id) { try { const { data } = await api('/members/'+id); openMemberModal(data); } catch(e) { toast(e.message,'error'); } }
+async function saveMember() {
+  const id = document.getElementById('memberId2').value;
+  const body = { name:document.getElementById('memName').value.trim(), email:document.getElementById('memEmail').value.trim(), phone:document.getElementById('memPhone').value.trim(), membershipType:document.getElementById('memType').value, status:document.getElementById('memStatus').value, address:{ city:document.getElementById('memCity').value.trim(), state:document.getElementById('memState').value.trim() } };
+  try { if(id) { await api('/members/'+id,'PUT',body); toast('Member updated','success'); } else { await api('/members','POST',body); toast('Member registered','success'); } closeModal('memberModal'); loadMembers(); } catch(e) { toast(e.message,'error'); }
+}
+async function deleteMember(id,name) {
+  if(!confirm(`Delete member "${name}"?`)) return;
+  try { await api('/members/'+id,'DELETE'); toast('Member deleted','success'); loadMembers(); } catch(e) { toast(e.message,'error'); }
+}
+async function payFine(id,name,amount) {
+  if(!confirm(`Clear ₹${amount} fine for ${name}?`)) return;
+  try { const { message } = await api('/transactions/pay-fine/'+id,'PUT'); toast(message,'success'); loadMembers(); } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Transactions ───────────────────────────────────────────────
+async function loadTransactions(page = txPage) {
+  txPage = page;
+  const params = new URLSearchParams({ page, limit:10 });
+  if (document.getElementById('txStatFilter').value) params.set('status', document.getElementById('txStatFilter').value);
+
+  const tb = document.getElementById('transactionsTable');
+  tb.innerHTML = '<tr class="loading-row"><td colspan="10"><div class="spinner"></div></td></tr>';
+  try {
+    const { data, pagination } = await api('/transactions?' + params);
+    if (!data.length) { 
+      tb.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="big-icon">📋</div><p>No transactions</p></div></td></tr>'; 
+    } else {
+      const now = Date.now();
+      tb.innerHTML = data.map(tx => {
+        const due = new Date(tx.dueDate); 
+        const dueCls = tx.status==='Overdue'?'overdue':due-now<172800000?'due-soon':'';
+        const issuerName = tx.issuedBy ? tx.issuedBy.fullName : 'System/Admin';
+        
+        return `<tr>
+          <td style="font-family:monospace;font-size:11px;color:var(--gold)">${tx.transactionId}</td>
+          <td><div style="font-weight:500">${tx.member?.name||'?'}</div><div style="font-size:10.5px;color:var(--text-dim)">${tx.member?.memberId||''}</div></td>
+          <td style="font-size:12px">${tx.book?.title||'?'}</td>
+          <td style="font-size:11.5px;color:var(--text-muted)">${issuerName}</td>
+          <td style="font-size:11.5px;color:var(--text-muted)">${new Date(tx.borrowDate).toLocaleDateString()}</td>
+          <td class="${dueCls}" style="font-size:11.5px">${due.toLocaleDateString()}</td>
+          <td style="font-size:11.5px;color:var(--text-muted)">${tx.returnDate?new Date(tx.returnDate).toLocaleDateString():'—'}</td>
+          <td><span class="badge ${tx.status==='Active'?'badge-blue':tx.status==='Overdue'?'badge-red':'badge-green'}">${tx.status}</span></td>
+          <td style="${tx.fineAmount>0?'color:var(--red)':'color:var(--text-muted)'}">${tx.fineAmount>0?`₹${tx.fineAmount}`:'—'}</td>
+          <td>${tx.status!=='Returned'?`<button class="btn btn-success btn-sm" onclick="returnBook('${tx._id}')">↩ Return</button>`:'<span style="font-size:11px;color:var(--text-dim)">Done</span>'}</td>
+        </tr>`;
+      }).join('');
+    }
+    renderPagination('tx', pagination);
+  } catch(e) { tb.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--red)">${e.message}</td></tr>`; }
+}
+
+// ── Borrow ─────────────────────────────────────────────────────
+let allBorrowMembers = [];
+let allBorrowBooks = [];
+
+async function loadBorrowSelects() {
+  try {
+    const [mb, bk] = await Promise.all([api('/members?status=Active&limit=100'), api('/books?status=Available&limit=100')]);
+    allBorrowMembers = mb.data;
+    allBorrowBooks = bk.data;
+    renderBorrowSelects(allBorrowMembers, allBorrowBooks);
+  } catch(e) { toast('Could not load selects: '+e.message,'error'); }
+}
+
+function filterBorrowSelects() {
+  const mSearch = document.getElementById('borrowSearchMember').value.toLowerCase();
+  const bSearch = document.getElementById('borrowSearchBook').value.toLowerCase();
+
+  const filteredMembers = allBorrowMembers.filter(m => 
+    m.name.toLowerCase().includes(mSearch) || m.memberId.toLowerCase().includes(mSearch)
+  );
+  const filteredBooks = allBorrowBooks.filter(b => 
+    b.title.toLowerCase().includes(bSearch) || b.author.toLowerCase().includes(bSearch)
+  );
+
+  renderBorrowSelects(filteredMembers, filteredBooks);
+}
+
+function renderBorrowSelects(members, books) {
+  document.getElementById('borrowMemberId').innerHTML = '<option value="">— Select Member —</option>' + 
+    members.map(m=>`<option value="${m._id}">${m.name} (${m.memberId})</option>`).join('');
+    
+  document.getElementById('borrowBookId').innerHTML = '<option value="">— Select Book —</option>' + 
+    books.map(b=>`<option value="${b._id}">${b.title} — ${b.author} [${b.availableCopies} avail.]</option>`).join('');
+}
+
+async function issueBorrow() {
+  const memberId = document.getElementById('borrowMemberId').value;
+  const bookId = document.getElementById('borrowBookId').value;
+  const notes = document.getElementById('borrowNotes').value.trim();
+  if (!memberId||!bookId) { toast('Select both member and book','error'); return; }
+  try {
+    const { message } = await api('/transactions/borrow','POST',{ memberId, bookId, notes });
+    toast(message,'success');
+    document.getElementById('borrowMemberId').value='';
+    document.getElementById('borrowBookId').value='';
+    document.getElementById('borrowSearchMember').value='';
+    document.getElementById('borrowSearchBook').value='';
+    document.getElementById('borrowNotes').value='';
+    loadBorrowSelects();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Returns ────────────────────────────────────────────────────
+async function loadReturns() {
+  const status = document.getElementById('returnStatFilter').value;
+  const tb = document.getElementById('returnsTable');
+  tb.innerHTML = '<tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr>';
+  try {
+    const params = new URLSearchParams({ limit:50 });
+    if (status) params.set('status', status);
+    const { data } = await api('/transactions?' + params);
+    if (!data.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="big-icon">↩️</div><p>No active borrows</p></div></td></tr>'; return; }
+    const now = Date.now();
+    tb.innerHTML = data.map(tx => {
+      const due = new Date(tx.dueDate); const isOvr = due<now;
+      const days = isOvr?Math.ceil((now-due)/86400000):0;
+      return `<tr>
+        <td style="font-family:monospace;font-size:11px;color:var(--gold)">${tx.transactionId}</td>
+        <td style="font-weight:500">${tx.member?.name||'?'}</td>
+        <td style="font-size:12px">${tx.book?.title||'?'}</td>
+        <td class="${isOvr?'overdue':''}">${due.toLocaleDateString()}</td>
+        <td><span class="badge ${tx.status==='Overdue'?'badge-red':'badge-blue'}">${tx.status}</span></td>
+        <td style="${days>0?'color:var(--red);font-weight:600':'color:var(--text-muted)'}">${days>0?`₹${days*5} (${days}d)`:'—'}</td>
+        <td><button class="btn btn-success btn-sm" onclick="returnBook('${tx._id}')">↩ Return Now</button></td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tb.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--red)">${e.message}</td></tr>`; }
+}
+async function returnBook(txId) {
+  if(!confirm('Mark this book as returned?')) return;
+  try {
+    const { message } = await api('/transactions/return/'+txId,'PUT');
+    toast(message,'success');
+    const pg = document.querySelector('.page.active').id.replace('page-','');
+    if(pg==='transactions') loadTransactions();
+    else if(pg==='returns') loadReturns();
+    else if(pg==='dashboard') loadDashboard();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Issuers (Admin) ────────────────────────────────────────────
+async function loadIssuers(page = issuersPage) {
+  issuersPage = page;
+  const params = new URLSearchParams({ page, limit:10 });
+  const actFilter = document.getElementById('issuerActiveFilter').value;
+  if (actFilter !== '') params.set('isActive', actFilter);
+  const tb = document.getElementById('issuersTable');
+  tb.innerHTML = '<tr class="loading-row"><td colspan="8"><div class="spinner"></div></td></tr>';
+  try {
+    const { data, pagination } = await api('/auth/issuers?' + params);
+    if (!data.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="big-icon">🔑</div><p>No issuer accounts yet</p></div></td></tr>'; }
+    else tb.innerHTML = data.map(u => {
+      const perms = Object.entries(u.permissions||{}).filter(([,v])=>v).map(([k])=>({manageBooks:'📚',manageMembers:'👥',issueBooks:'📖',returnBooks:'↩️',viewReports:'📊'}[k]||k)).join(' ');
+      const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : 'Never';
+      return `<tr>
+        <td style="font-family:monospace;font-size:11px;color:var(--gold)">${u.employeeId}</td>
+        <td style="font-weight:500">${u.username}</td>
+        <td>${u.fullName}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${u.email||'—'}</td>
+        <td style="font-size:14px">${perms}</td>
+        <td><span class="badge ${u.isActive?'badge-green':'badge-red'}">${u.isActive?'Active':'Inactive'}</span></td>
+        <td style="font-size:11.5px;color:var(--text-muted)">${lastLogin}</td>
+        <td><div style="display:flex;gap:4px">
+          <button class="btn btn-secondary btn-sm" onclick="editIssuer('${u._id}')">✏️</button>
+          <button class="btn btn-amber btn-sm" style="background:rgba(212,136,58,0.1);color:var(--amber);border:1px solid rgba(212,136,58,0.25);padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer" onclick="openResetPwd('${u._id}','${u.username}')">🔒</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteIssuer('${u._id}','${u.username}')">🗑️</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+    renderPagination('issuers', pagination);
+  } catch(e) { tb.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--red)">${e.message}</td></tr>`; }
+}
+
+function openIssuerModal(data=null) {
+  document.getElementById('issuerId').value = data?._id||'';
+  document.getElementById('issuerModalTitle').textContent = data?'Edit Issuer Account':'Create Issuer Account';
+  document.getElementById('issuerUsername').value = data?.username||'';
+  document.getElementById('issuerUsername').disabled = !!data; // can't change username on edit
+  document.getElementById('issuerFullName').value = data?.fullName||'';
+  document.getElementById('issuerEmail').value = data?.email||'';
+  document.getElementById('issuerPhone').value = data?.phone||'';
+  document.getElementById('issuerPassword').value = '';
+  document.getElementById('issuerPwdLabel').textContent = data ? 'New Password (leave blank to keep)' : 'Password *';
+  document.getElementById('issuerActive').value = data ? String(data.isActive) : 'true';
+  const p = data?.permissions || {};
+  document.getElementById('perm-manageBooks').checked = p.manageBooks ?? true;
+  document.getElementById('perm-manageMembers').checked = p.manageMembers ?? false;
+  document.getElementById('perm-issueBooks').checked = p.issueBooks ?? true;
+  document.getElementById('perm-returnBooks').checked = p.returnBooks ?? true;
+  document.getElementById('perm-viewReports').checked = p.viewReports ?? false;
+  openModal('issuerModal');
+}
+async function editIssuer(id) {
+  try { const { data } = await api('/auth/issuers'); const u = data.find(x=>x._id===id); if(u) openIssuerModal(u); } catch(e) { toast(e.message,'error'); }
+}
+async function saveIssuer() {
+  const id = document.getElementById('issuerId').value;
+  const pwd = document.getElementById('issuerPassword').value;
+  const body = {
+    fullName: document.getElementById('issuerFullName').value.trim(),
+    email: document.getElementById('issuerEmail').value.trim(),
+    phone: document.getElementById('issuerPhone').value.trim(),
+    isActive: document.getElementById('issuerActive').value === 'true',
+    permissions: { manageBooks:document.getElementById('perm-manageBooks').checked, manageMembers:document.getElementById('perm-manageMembers').checked, issueBooks:document.getElementById('perm-issueBooks').checked, returnBooks:document.getElementById('perm-returnBooks').checked, viewReports:document.getElementById('perm-viewReports').checked },
+  };
+  if (!id) { body.username = document.getElementById('issuerUsername').value.trim(); body.password = pwd; }
+  else if (pwd) body.password = pwd;
+  try {
+    if (id) { await api('/auth/issuers/'+id,'PUT',body); toast('Issuer account updated','success'); }
+    else { await api('/auth/issuers','POST',body); toast('Issuer account created','success'); }
+    closeModal('issuerModal'); loadIssuers();
+  } catch(e) { toast(e.message,'error'); }
+}
+async function deleteIssuer(id, username) {
+  if(!confirm(`Delete issuer account '${username}'? This cannot be undone.`)) return;
+  try { await api('/auth/issuers/'+id,'DELETE'); toast('Account deleted','success'); loadIssuers(); } catch(e) { toast(e.message,'error'); }
+}
+
+function openResetPwd(id, username) {
+  document.getElementById('resetUserId').value = id;
+  document.getElementById('resetUserName').textContent = username;
+  document.getElementById('resetNewPwd').value = '';
+  openModal('resetPwdModal');
+}
+async function doResetPassword() {
+  const id = document.getElementById('resetUserId').value;
+  const newPassword = document.getElementById('resetNewPwd').value;
+  if (!newPassword || newPassword.length < 6) { toast('Password must be at least 6 characters','error'); return; }
+  try { const { message } = await api('/auth/issuers/'+id+'/reset-password','PUT',{ newPassword }); toast(message,'success'); closeModal('resetPwdModal'); } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Profile ────────────────────────────────────────────────────
+async function loadProfile() {
+  try {
+    const { data } = await api('/auth/me');
+    const el = document.getElementById('profileInfo');
+    const rows = [
+      ['Employee ID', data.employeeId], ['Full Name', data.fullName], ['Username', data.username],
+      ['Email', data.email||'—'], ['Phone', data.phone||'—'], ['Role', `<span class="badge ${data.role==='admin'?'badge-gold':'badge-blue'}">${data.role==='admin'?'👑 Administrator':'📋 Issuer'}</span>`],
+      ['Status', `<span class="badge ${data.isActive?'badge-green':'badge-red'}">${data.isActive?'Active':'Inactive'}</span>`],
+      ['Last Login', data.lastLogin?new Date(data.lastLogin).toLocaleString():'—'],
+      ['Account Created', new Date(data.createdAt).toLocaleDateString()],
+    ];
+    el.innerHTML = rows.map(([k,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted);font-size:12px;font-weight:500">${k}</span><span style="font-size:13.5px">${v}</span></div>`).join('');
+  } catch(e) { toast(e.message,'error'); }
+}
+async function changePassword() {
+  const cur = document.getElementById('curPwd').value;
+  const nw = document.getElementById('newPwd').value;
+  const conf = document.getElementById('confPwd').value;
+  if (!cur||!nw||!conf) { toast('All fields are required','error'); return; }
+  if (nw !== conf) { toast('New passwords do not match','error'); return; }
+  if (nw.length < 6) { toast('Password must be at least 6 characters','error'); return; }
+  try {
+    const { message } = await api('/auth/change-password','PUT',{ currentPassword:cur, newPassword:nw });
+    toast(message,'success');
+    document.getElementById('curPwd').value=''; document.getElementById('newPwd').value=''; document.getElementById('confPwd').value='';
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Pagination ─────────────────────────────────────────────────
+function renderPagination(key, pagination) {
+  if (!pagination) return;
+  const { total, page, limit, pages } = pagination;
+  const start = (page-1)*limit+1, end = Math.min(page*limit,total);
+  const infoEl = document.getElementById(`${key}PaginationInfo`);
+  if (infoEl) infoEl.textContent = total===0?'No results':`Showing ${start}–${end} of ${total}`;
+  const btns = document.getElementById(`${key}PaginationBtns`);
+  if (!btns) return;
+  const loaders = { books:loadBooks, members:loadMembers, tx:loadTransactions, issuers:loadIssuers };
+  btns.innerHTML = '';
+  const prev = document.createElement('button'); prev.className='page-btn'; prev.textContent='‹'; prev.disabled=page<=1; prev.onclick=()=>loaders[key](page-1); btns.appendChild(prev);
+  for (let i=Math.max(1,page-2);i<=Math.min(pages,page+2);i++) { const b=document.createElement('button'); b.className='page-btn'+(i===page?' active':''); b.textContent=i; b.onclick=()=>loaders[key](i); btns.appendChild(b); }
+  const next = document.createElement('button'); next.className='page-btn'; next.textContent='›'; next.disabled=page>=pages; next.onclick=()=>loaders[key](page+1); btns.appendChild(next);
+}
+
+// ── Modal ──────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); }));
+
+// ── Toast ──────────────────────────────────────────────────────
+function toast(msg, type='info') {
+  const icons = { success:'✅', error:'❌', info:'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(()=>el.remove(), 4500);
+}
+
+// ── Utils ──────────────────────────────────────────────────────
+function relTime(d) {
+  const diff = Date.now()-new Date(d).getTime(), m=Math.floor(diff/60000);
+  if(m<1) return 'just now'; if(m<60) return `${m}m ago`;
+  const h=Math.floor(m/60); if(h<24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
+}
+</script>
+</body>
+</html>
