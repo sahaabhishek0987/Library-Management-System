@@ -37,18 +37,8 @@ async function seed() {
     await User.deleteMany({});
     console.log("🗑️  Cleared existing data");
 
-    // ── Create Admin Account ──
-    const admin = new User({
-      username: "admin",
-      password: "admin123",
-      fullName: "Library Administrator",
-      email: "admin@library.com",
-      role: "admin",
-    });
-    await admin.save();
-    console.log("👑 Admin created  → username: admin | password: admin123");
 
-    // ── Create Sample Issuer Account ──
+
     const issuer = new User({
       username: "issuer1",
       password: "issuer123",
@@ -68,23 +58,16 @@ async function seed() {
     await issuer.save();
     console.log("📋 Issuer created → username: issuer1 | password: issuer123");
 
-    // ── Seed Books ──
     const books = await Book.insertMany(sampleBooks);
     console.log(`📚 Inserted ${books.length} books`);
 
-    // ── Seed Members ──
     for (const m of sampleMembers) {
       await new Member(m).save();
     }
     console.log(`👥 Inserted ${sampleMembers.length} members`);
 
     console.log(`
-╔══════════════════════════════════════╗
-║   ✨  Seed Complete!                  ║
-╠══════════════════════════════════════╣
-║  Admin   : admin / admin123           ║
-║  Issuer  : issuer1 / issuer123        ║
-╚══════════════════════════════════════╝
+
     `);
     process.exit(0);
   } catch (err) {
@@ -92,5 +75,4 @@ async function seed() {
     process.exit(1);
   }
 }
-
 seed();
