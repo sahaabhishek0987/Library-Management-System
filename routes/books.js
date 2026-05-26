@@ -2,11 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Book = require("../models/Book");
 const { protect, requirePermission } = require("../middleware/auth");
-
-// All book routes require authentication
 router.use(protect);
-
-// ─── GET /api/books ─── List all books with filters & pagination
 router.get("/", async (req, res) => {
   try {
     const {
@@ -18,7 +14,6 @@ router.get("/", async (req, res) => {
       sortBy = "createdAt",
       order = "desc",
     } = req.query;
-
     const query = {};
     if (search) {
       query.$or = [
@@ -29,10 +24,8 @@ router.get("/", async (req, res) => {
     }
     if (category) query.category = category;
     if (status) query.status = status;
-
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sortOrder = order === "asc" ? 1 : -1;
-
     const [books, total] = await Promise.all([
       Book.find(query)
         .sort({ [sortBy]: sortOrder })
@@ -40,7 +33,6 @@ router.get("/", async (req, res) => {
         .limit(parseInt(limit)),
       Book.countDocuments(query),
     ]);
-
     res.json({
       success: true,
       data: books,
@@ -55,8 +47,6 @@ router.get("/", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── GET /api/books/stats ─── Book statistics
 router.get("/stats", async (req, res) => {
   try {
     const [total, available, categories] = await Promise.all([
@@ -67,7 +57,6 @@ router.get("/stats", async (req, res) => {
         { $sort: { count: -1 } },
       ]),
     ]);
-
     res.json({
       success: true,
       data: { total, available, outOfStock: total - available, categories },
@@ -76,8 +65,6 @@ router.get("/stats", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── GET /api/books/:id ─── Get single book
 router.get("/:id", async (req, res) => {
   try {
     const book = await Book.findById(req.params.id);
@@ -90,8 +77,6 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// ─── POST /api/books ─── Add new book
 router.post("/", requirePermission("manageBooks"), async (req, res) => {
   try {
     const book = new Book(req.body);
@@ -105,8 +90,6 @@ router.post("/", requirePermission("manageBooks"), async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 });
-
-// ─── PUT /api/books/:id ─── Update book
 router.put("/:id", requirePermission("manageBooks"), async (req, res) => {
   try {
     const book = await Book.findByIdAndUpdate(req.params.id, req.body, {
@@ -120,8 +103,6 @@ router.put("/:id", requirePermission("manageBooks"), async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 });
-
-// ─── DELETE /api/books/:id ─── Delete book
 router.delete("/:id", requirePermission("manageBooks"), async (req, res) => {
   try {
     const book = await Book.findByIdAndDelete(req.params.id);
@@ -132,5 +113,4 @@ router.delete("/:id", requirePermission("manageBooks"), async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
 module.exports = router;
