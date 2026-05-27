@@ -84,7 +84,7 @@ library-management-system/
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/sahaabhishek0987/Library-Management-System.git
 cd library-management-system
 
 # Install dependencies
